@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html data-bs-theme="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>egiedeasis.com</title>
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:300,400,700&amp;display=swap">
+    <link rel="stylesheet" href="assets/css/pikaday.min.css">
+</head>
+
+<body><style>
+    body {
+        margin: 0;
+        background: #111;
+        color: white;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .container {
+        text-align: center;
+        width: 90%;
+        max-width: 700px;
+    }
+
+    h1 {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+
+    .drill {
+        font-size: 2.2rem;
+        margin: 30px 0;
+        color: #00ffb3;
+        min-height: 80px;
+    }
+
+    .timer {
+        font-size: 4rem;
+        margin: 15px 0;
+    }
+
+    .total-timer {
+        font-size: 2rem;
+        color: #ffcc00;
+    }
+
+    .controls {
+        margin-top: 30px;
+    }
+
+    button {
+        padding: 12px 24px;
+        margin: 10px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    .start { background: #00c853; color: white; }
+    .pause { background: #ff9100; color: white; }
+    .reset { background: #d50000; color: white; }
+
+    .settings {
+        margin-top: 20px;
+    }
+
+    input {
+        padding: 8px;
+        width: 80px;
+        text-align: center;
+        font-size: 1rem;
+    }
+
+    label {
+        margin: 0 10px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>BJJ Drill Randomizer</h1>
+
+    <div class="drill" id="drillName">
+        Press Start
+    </div>
+
+    <div class="timer" id="drillTimer">
+        00:00
+    </div>
+
+    <div class="total-timer">
+        Total Remaining: <span id="totalTimer">00:00</span>
+    </div>
+
+    <div class="settings">
+        <label>
+            Total Minutes:
+            <input type="number" id="totalMinutes" value="20" min="1">
+        </label>
+
+        <label>
+            Min Drill Sec:
+            <input type="number" id="minDrill" value="45" min="15">
+        </label>
+
+        <label>
+            Max Drill Sec:
+            <input type="number" id="maxDrill" value="90" min="20">
+        </label>
+    </div>
+
+    <div class="controls">
+        <button class="start" onclick="startWorkout()">Start</button>
+        <button class="pause" onclick="pauseWorkout()">Pause</button>
+        <button class="reset" onclick="resetWorkout()">Reset</button>
+    </div>
+
+</div>
+
+<script>
+
+const drills = [
+    "Guard Passing",
+    "Toreando Pass",
+    "Knee Slice Pass",
+    "Triangle Choke",
+    "Armbar from Guard",
+    "Hip Escape",
+    "Technical Standup",
+    "Single Leg Entries",
+    "Double Leg Entries",
+    "Back Takes",
+    "Mount Escapes",
+    "Side Control Escapes",
+    "Closed Guard Retention",
+    "Spider Guard Drills",
+    "De La Riva Entries",
+    "North-South Transitions",
+    "Kimura Attacks",
+    "Guillotine Entries",
+    "Berimbolo Movement",
+    "Turtle Escapes"
+];
+
+let totalSeconds = 0;
+let currentDrillSeconds = 0;
+
+let totalInterval;
+let drillInterval;
+
+let running = false;
+
+function formatTime(sec) {
+    const mins = Math.floor(sec / 60).toString().padStart(2, "0");
+    const secs = (sec % 60).toString().padStart(2, "0");
+    return `${mins}:${secs}`;
+}
+
+function randomDrill() {
+    return drills[Math.floor(Math.random() * drills.length)];
+}
+
+function randomDuration(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function nextDrill() {
+
+    const min = parseInt(document.getElementById("minDrill").value);
+    const max = parseInt(document.getElementById("maxDrill").value);
+
+    currentDrillSeconds = randomDuration(min, max);
+
+    document.getElementById("drillName").innerText = randomDrill();
+    document.getElementById("drillTimer").innerText = formatTime(currentDrillSeconds);
+
+    clearInterval(drillInterval);
+
+    drillInterval = setInterval(() => {
+
+        if (!running) return;
+
+        currentDrillSeconds--;
+
+        document.getElementById("drillTimer").innerText =
+            formatTime(currentDrillSeconds);
+
+        if (currentDrillSeconds <= 0) {
+            nextDrill();
+        }
+
+    }, 1000);
+}
+
+function startWorkout() {
+
+    if (running) return;
+
+    running = true;
+
+    if (totalSeconds <= 0) {
+        totalSeconds =
+            parseInt(document.getElementById("totalMinutes").value) * 60;
+    }
+
+    nextDrill();
+
+    totalInterval = setInterval(() => {
+
+        if (!running) return;
+
+        totalSeconds--;
+
+        document.getElementById("totalTimer").innerText =
+            formatTime(totalSeconds);
+
+        if (totalSeconds <= 0) {
+
+            clearInterval(totalInterval);
+            clearInterval(drillInterval);
+
+            document.getElementById("drillName").innerText =
+                "Workout Complete";
+
+            document.getElementById("drillTimer").innerText = "00:00";
+
+            running = false;
+        }
+
+    }, 1000);
+
+    document.getElementById("totalTimer").innerText =
+        formatTime(totalSeconds);
+}
+
+function pauseWorkout() {
+    running = false;
+}
+
+function resetWorkout() {
+
+    running = false;
+
+    clearInterval(totalInterval);
+    clearInterval(drillInterval);
+
+    totalSeconds = 0;
+    currentDrillSeconds = 0;
+
+    document.getElementById("drillName").innerText = "Press Start";
+    document.getElementById("drillTimer").innerText = "00:00";
+    document.getElementById("totalTimer").innerText = "00:00";
+}
+
+</script>
+    <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+    <script src="assets/js/pikaday.min.js"></script>
+    <script src="assets/js/theme.js"></script>
+</body>
+
+</html>
