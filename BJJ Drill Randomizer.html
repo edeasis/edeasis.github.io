@@ -49,7 +49,7 @@
         font-size: 2rem;
         color: #ffcc00;
     }
-
+    
     .controls {
         margin-top: 30px;
     }
@@ -92,7 +92,56 @@
     <div class="drill" id="drillName">
         Press Start
     </div>
+    <div
+        id="systemMessage"
+        style="
+            margin-top:15px;
+            color:#ffcc00;
+            min-height:25px;
+            font-size:0.95rem;
+        ">
+    </div>
+<div class="settings">
 
+    <label>
+        Category:
+        <select id="categorySelect">
+
+            <option value="mix">Mix</option>
+
+            <option value="standing">
+                Standing / Grip Fighting
+            </option>
+
+            <option value="takedowns">
+                Takedowns
+            </option>
+
+            <option value="guardPassing">
+                Guard Passing
+            </option>
+
+            <option value="retention">
+                Guard Retention
+            </option>
+
+            <option value="positional">
+                Positional Escapes
+            </option>
+
+        </select>
+    </label>
+
+</div>
+
+<div
+    id="drillDescription"
+    style="
+        margin-top:20px;
+        color:#bbb;
+        font-size:1.1rem;
+        min-height:60px;">
+</div>
     <div class="timer" id="drillTimer">
         00:00
     </div>
@@ -127,29 +176,95 @@
 </div>
 
 <script>
+let plannedWorkout = [];
+let currentWorkoutIndex = 0;
+let inBuffer = false;
+const BUFFER_SECONDS = 10;
 
-const drills = [
-    "Guard Passing",
-    "Toreando Pass",
-    "Knee Slice Pass",
-    "Triangle Choke",
-    "Armbar from Guard",
-    "Hip Escape",
-    "Technical Standup",
-    "Single Leg Entries",
-    "Double Leg Entries",
-    "Back Takes",
-    "Mount Escapes",
-    "Side Control Escapes",
-    "Closed Guard Retention",
-    "Spider Guard Drills",
-    "De La Riva Entries",
-    "North-South Transitions",
-    "Kimura Attacks",
-    "Guillotine Entries",
-    "Berimbolo Movement",
-    "Turtle Escapes"
-];
+const drills = {
+    takedowns: [
+        {
+            name: "Shot Entry Reps",
+            description: "Practice level changes and penetration steps for explosive takedown entries."
+        },
+        {
+            name: "Single-Leg Lift and Return",
+            description: "Work balance, lifting mechanics, and controlled finishes."
+        },
+        {
+            name: "Snap Down to Front Headlock",
+            description: "Develop timing for snapping opponents into front headlock control."
+        },
+        {
+            name: "Foot Sweep Timing Drill",
+            description: "Train off-balancing and sweep timing using light movement."
+        }
+    ],
+
+    guardPassing: [
+        {
+            name: "Toreando Pass Drill",
+            description: "Practice fast side-to-side passing movement around the legs."
+        },
+        {
+            name: "Leg Drag Flow",
+            description: "Chain leg drag entries while maintaining upper body control."
+        },
+        {
+            name: "Knee Cut Movement Drill",
+            description: "Focus on angle creation and knee slice pressure."
+        },
+        {
+            name: "Bullfighter Pass Reaction Drill",
+            description: "Improve passing reactions against moving legs."
+        }
+    ],
+
+    retention: [
+        {
+            name: "Hip Escape Mirror Drill",
+            description: "Build hip mobility and defensive guard recovery movement."
+        },
+        {
+            name: "Spider Guard Foot Placement Drill",
+            description: "Develop active hooks and distance management."
+        }
+    ],
+
+    positional: [
+        {
+            name: "Mount Escape Flow",
+            description: "Practice bridge and elbow escape combinations."
+        },
+        {
+            name: "Side Control Escape Reps",
+            description: "Focus on frames, hip escapes, and guard recovery."
+        },
+        {
+            name: "Back Control Maintenance",
+            description: "Maintain hooks and chest connection during movement."
+        },
+        {
+            name: "Turtle Breakdown Drill",
+            description: "Work transitions and pressure against turtle defense."
+        }
+    ],
+
+    standing: [
+        {
+            name: "Pummeling",
+            description: "Develop inside control and underhook awareness."
+        },
+        {
+            name: "Arm Drag Drill",
+            description: "Train angle creation and back exposure from standing."
+        },
+        {
+            name: "Grip Fighting",
+            description: "Improve hand fighting and dominant grip acquisition."
+        }
+    ]
+};
 
 let totalSeconds = 0;
 let currentDrillSeconds = 0;
@@ -158,6 +273,7 @@ let totalInterval;
 let drillInterval;
 
 let running = false;
+let currentDrill = null;
 
 function formatTime(sec) {
     const mins = Math.floor(sec / 60).toString().padStart(2, "0");
@@ -165,23 +281,235 @@ function formatTime(sec) {
     return `${mins}:${secs}`;
 }
 
-function randomDrill() {
-    return drills[Math.floor(Math.random() * drills.length)];
+function getSelectedDrills() {
+
+    const category =
+        document.getElementById("categorySelect").value;
+
+    if (category === "mix") {
+        return Object.values(drills).flat();
+    }
+
+    return drills[category];
 }
 
 function randomDuration(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+    
+function generateWorkoutPlan(total, min, max) {
+
+    let durations = [];
+
+    /*
+    Validation
+    */
+    if (min > max) {
+
+        return {
+            durations: [],
+            adjustedTotal: min,
+            message:
+                "Min Drill Sec cannot exceed Max Drill Sec."
+        };
+    }
+
+    /*
+    If total is smaller than minimum,
+    auto-adjust upward.
+    */
+    if (total < min) {
+
+        return {
+            durations: [min],
+            adjustedTotal: min,
+            message:
+                `Total workout time adjusted to ${min} sec because the requested time was too short for the drill constraints.`
+        };
+    }
+
+    let remaining = total;
+
+    /*
+    Safety counter prevents infinite loops.
+    */
+    let attempts = 0;
+
+    while (remaining > 0 && attempts < 10000) {
+
+        attempts++;
+
+        /*
+        Final drill fits perfectly.
+        */
+        if (
+            remaining >= min &&
+            remaining <= max
+        ) {
+
+            durations.push(remaining);
+            remaining = 0;
+            break;
+        }
+
+        let next =
+            randomDuration(min, max);
+
+        let leftover =
+            remaining - next;
+
+        /*
+        Valid leftover.
+        */
+        if (
+            leftover === 0 ||
+            leftover >= min
+        ) {
+
+            durations.push(next);
+            remaining -= next;
+        }
+    }
+
+    /*
+    If impossible exact allocation,
+    adjust total downward.
+    */
+    let allocated =
+        durations.reduce((a, b) => a + b, 0);
+
+    /*
+    If allocation completely failed,
+    force single valid drill.
+    */
+    if (allocated === 0) {
+
+        allocated = min;
+
+        durations = [min];
+    }
+
+    let message = "";
+
+    if (allocated !== total) {
+
+        message =
+            `Adjusted total workout time to ${
+                Math.floor(allocated / 60)
+            } min ${
+                allocated % 60
+            } sec to fit drill constraints.`;
+    }
+
+    return {
+        durations,
+        adjustedTotal: allocated,
+        message
+    };
+}
+
+function randomDrill() {
+
+    const selected = getSelectedDrills();
+
+    let next;
+
+    do {
+        next = selected[
+            Math.floor(Math.random() * selected.length)
+        ];
+    } while (
+        currentDrill &&
+        selected.length > 1 &&
+        next.name === currentDrill.name
+    );
+
+    currentDrill = next;
+
+    return next;
+}
+
+function showDrill(drill) {
+
+    document.getElementById("drillName").innerText =
+        drill.name;
+
+    document.getElementById("drillDescription").innerText =
+        drill.description;
+}
+
+function startBuffer(nextCallback) {
+
+    inBuffer = true;
+
+    let buffer = BUFFER_SECONDS;
+
+    document.getElementById("drillName").innerText =
+        "Next Drill Starting...";
+
+    document.getElementById("drillDescription").innerText =
+        "Transition / Water Break";
+
+    document.getElementById("drillTimer").innerText =
+        formatTime(buffer);
+
+    clearInterval(drillInterval);
+
+    drillInterval = setInterval(() => {
+
+        if (!running) return;
+
+        buffer--;
+
+        document.getElementById("drillTimer").innerText =
+            formatTime(buffer);
+
+        if (buffer <= 0) {
+
+            clearInterval(drillInterval);
+
+            inBuffer = false;
+
+            nextCallback();
+        }
+
+    }, 1000);
+}
 
 function nextDrill() {
 
-    const min = parseInt(document.getElementById("minDrill").value);
-    const max = parseInt(document.getElementById("maxDrill").value);
+    if (
+        currentWorkoutIndex >= plannedWorkout.length
+    ) {
 
-    currentDrillSeconds = randomDuration(min, max);
+        clearInterval(totalInterval);
+        clearInterval(drillInterval);
 
-    document.getElementById("drillName").innerText = randomDrill();
-    document.getElementById("drillTimer").innerText = formatTime(currentDrillSeconds);
+        document.getElementById("drillName").innerText =
+            "Workout Complete";
+
+        document.getElementById("drillDescription").innerText =
+            "Great work.";
+
+        document.getElementById("drillTimer").innerText =
+            "00:00";
+
+        running = false;
+
+        return;
+    }
+
+    const drill = randomDrill();
+
+    currentDrillSeconds =
+        plannedWorkout[currentWorkoutIndex];
+
+    currentWorkoutIndex++;
+
+    showDrill(drill);
+
+    document.getElementById("drillTimer").innerText =
+        formatTime(currentDrillSeconds);
 
     clearInterval(drillInterval);
 
@@ -194,8 +522,29 @@ function nextDrill() {
         document.getElementById("drillTimer").innerText =
             formatTime(currentDrillSeconds);
 
+        if (!inBuffer) {
+
+            totalSeconds--;
+
+            document.getElementById("totalTimer").innerText =
+                formatTime(totalSeconds);
+        }
+
         if (currentDrillSeconds <= 0) {
-            nextDrill();
+
+            clearInterval(drillInterval);
+
+            if (
+                currentWorkoutIndex <
+                plannedWorkout.length
+            ) {
+
+                startBuffer(nextDrill);
+
+            } else {
+
+                nextDrill();
+            }
         }
 
     }, 1000);
@@ -207,40 +556,58 @@ function startWorkout() {
 
     running = true;
 
-    if (totalSeconds <= 0) {
-        totalSeconds =
-            parseInt(document.getElementById("totalMinutes").value) * 60;
-    }
+    const requestedMinutes =
+        parseInt(
+            document.getElementById("totalMinutes").value
+        );
 
-    nextDrill();
+    const min =
+        parseInt(
+            document.getElementById("minDrill").value
+        );
 
-    totalInterval = setInterval(() => {
+    const max =
+        parseInt(
+            document.getElementById("maxDrill").value
+        );
 
-        if (!running) return;
+    let requestedSeconds =
+        requestedMinutes * 60;
 
-        totalSeconds--;
+    /*
+    Generate valid workout plan.
+    */
+    const workoutPlan =
+        generateWorkoutPlan(
+            requestedSeconds,
+            min,
+            max
+        );
+
+    plannedWorkout =
+        workoutPlan.durations;
+
+    let allocated =
+        workoutPlan.adjustedTotal;
+
+    /*
+    If impossible allocation,
+    adjust total time.
+    */
+    document.getElementById(
+        "systemMessage"
+    ).innerText =
+        workoutPlan.message;    
+
+        totalSeconds = allocated;
+
+        currentWorkoutIndex = 0;
 
         document.getElementById("totalTimer").innerText =
             formatTime(totalSeconds);
 
-        if (totalSeconds <= 0) {
-
-            clearInterval(totalInterval);
-            clearInterval(drillInterval);
-
-            document.getElementById("drillName").innerText =
-                "Workout Complete";
-
-            document.getElementById("drillTimer").innerText = "00:00";
-
-            running = false;
-        }
-
-    }, 1000);
-
-    document.getElementById("totalTimer").innerText =
-        formatTime(totalSeconds);
-}
+        nextDrill();
+    }
 
 function pauseWorkout() {
     running = false;
@@ -255,10 +622,19 @@ function resetWorkout() {
 
     totalSeconds = 0;
     currentDrillSeconds = 0;
+    currentDrill = null;
 
-    document.getElementById("drillName").innerText = "Press Start";
-    document.getElementById("drillTimer").innerText = "00:00";
-    document.getElementById("totalTimer").innerText = "00:00";
+    document.getElementById("drillName").innerText =
+        "Press Start";
+
+    document.getElementById("drillDescription").innerText =
+        "";
+
+    document.getElementById("drillTimer").innerText =
+        "00:00";
+
+    document.getElementById("totalTimer").innerText =
+        "00:00";
 }
 
 </script>
