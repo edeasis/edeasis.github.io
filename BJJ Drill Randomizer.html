@@ -504,6 +504,9 @@ function startBuffer(nextCallback) {
             buffer > 0
         ) {
 
+            beep.pause();
+            beep.currentTime = 0;
+
             playSound(beep);
         }
 
@@ -542,7 +545,7 @@ function nextDrill() {
         document.getElementById("totalTimer").innerText =
             "00:00";
 
-        playSound(buzzer);
+        playSound(bell);
 
         running = false;
 
@@ -574,7 +577,7 @@ function nextDrill() {
 
             clearInterval(drillInterval);
 
-            playSound(buzzer);
+            playSound(bell);
 
             /*
             Last drill complete
@@ -608,6 +611,9 @@ function nextDrill() {
             return;
         }
 
+        document.getElementById("drillTimer").innerText =
+            formatTime(currentDrillSeconds);
+
         currentDrillSeconds--;
 
         /*
@@ -617,6 +623,9 @@ function nextDrill() {
             currentDrillSeconds <= 5 &&
             currentDrillSeconds > 0
         ) {
+
+            beep.pause();
+            beep.currentTime = 0;
 
             playSound(beep);
         }
