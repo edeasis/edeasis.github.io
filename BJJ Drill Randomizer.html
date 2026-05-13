@@ -29,13 +29,13 @@
     }
 
     h1 {
-        font-size: 3rem;
-        margin-bottom: 10px;
+        font-size: 2rem;
+        margin-bottom: 2px;
     }
 
     .drill {
-        font-size: 2.2rem;
-        margin: 30px 0;
+        font-size: 2rem;
+        margin: 10px 0;
         color: #00ffb3;
         min-height: 80px;
     }
@@ -47,7 +47,7 @@
 
     .total-timer {
         font-size: 2rem;
-        color: #ffcc00;
+        color: #00ffb3;
     }
     
     .controls {
@@ -88,21 +88,7 @@
 <div class="container">
 
     <h1>BJJ Drill Randomizer</h1>
-
-    <div class="drill" id="drillName">
-        Press Start
-    </div>
-    <div
-        id="systemMessage"
-        style="
-            margin-top:15px;
-            color:#ffcc00;
-            min-height:25px;
-            font-size:0.95rem;
-        ">
-    </div>
 <div class="settings">
-
     <label>
         Category:
         <select id="categorySelect">
@@ -131,8 +117,19 @@
 
         </select>
     </label>
-
 </div>
+    <div class="drill" id="drillName">
+        Press Start
+    </div>
+    <div
+        id="systemMessage"
+        style="
+            margin-top:5px;
+            color:#ffcc00;
+            min-height:10px;
+            font-size:0.95rem;
+        ">
+    </div>
 
 <div
     id="drillDescription"
@@ -153,7 +150,7 @@
     <div class="settings">
         <label>
             Total Minutes:
-            <input type="number" id="totalMinutes" value="20" min="1">
+            <input type="number" id="totalMinutes" value="10" min="1">
         </label>
 
         <label>
@@ -171,11 +168,17 @@
         <button class="start" onclick="startWorkout()">Start</button>
         <button class="pause" onclick="pauseWorkout()">Pause</button>
         <button class="reset" onclick="resetWorkout()">Reset</button>
+        <button onclick="toggleSound()" id="soundButton">
+            Sound: ON
+        </button>
     </div>
 
 </div>
 
 <script>
+const beep = new Audio("beep.mp3");
+const buzzer = new Audio("buzzer.mp3");
+const transition = new Audio("transition.mp3");
 let plannedWorkout = [];
 let currentWorkoutIndex = 0;
 let inBuffer = false;
@@ -274,7 +277,34 @@ let drillInterval;
 
 let running = false;
 let currentDrill = null;
+    
+beep.preload = "auto";
+buzzer.preload = "auto";
+transition.preload = "auto";
 
+let soundEnabled = true;
+
+function playSound(sound) {
+
+    if (!soundEnabled) return;
+
+    sound.currentTime = 0;
+
+    sound.play().catch(() => {
+        /* Prevent mobile autoplay errors */
+    });
+}
+
+function toggleSound() {
+
+    soundEnabled = !soundEnabled;
+
+    document.getElementById("soundButton").innerText =
+        soundEnabled
+            ? "Sound: ON"
+            : "Sound: OFF";
+}
+    
 function formatTime(sec) {
     const mins = Math.floor(sec / 60).toString().padStart(2, "0");
     const secs = (sec % 60).toString().padStart(2, "0");
@@ -493,7 +523,7 @@ function nextDrill() {
 
         document.getElementById("drillTimer").innerText =
             "00:00";
-
+        playSound(bell);
         running = false;
 
         return;
@@ -518,7 +548,14 @@ function nextDrill() {
         if (!running) return;
 
         currentDrillSeconds--;
+        if (
+            currentDrillSeconds <= 3 &&
+            currentDrillSeconds > 0
+        ) {
 
+            playSound(beep);
+        }
+        
         document.getElementById("drillTimer").innerText =
             formatTime(currentDrillSeconds);
 
@@ -531,7 +568,7 @@ function nextDrill() {
         }
 
         if (currentDrillSeconds <= 0) {
-
+            playSound(bell);
             clearInterval(drillInterval);
 
             if (
