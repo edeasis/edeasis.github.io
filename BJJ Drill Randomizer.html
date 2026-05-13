@@ -499,10 +499,7 @@ function startBuffer(nextCallback) {
         /*
         Last 5 second warning
         */
-        if (
-            buffer <= 5 &&
-            buffer > 0
-        ) {
+       if (currentDrillSeconds === 5) {
 
             beep.pause();
             beep.currentTime = 0;
@@ -566,71 +563,69 @@ function nextDrill() {
 
     clearInterval(drillInterval);
 
-drillInterval = setInterval(() => {
+    drillInterval = setInterval(() => {
 
-    if (!running) return;
+        if (!running) return;
 
-    if (currentDrillSeconds <= 0) {
+        if (currentDrillSeconds <= 0) {
 
-        clearInterval(drillInterval);
+            clearInterval(drillInterval);
 
-        playSound(buzzer);
+            playSound(buzzer);
 
-        if (
-            currentWorkoutIndex >=
-            plannedWorkout.length
-        ) {
+            if (
+                currentWorkoutIndex >=
+                plannedWorkout.length
+            ) {
 
-            document.getElementById("drillName").innerText =
-                "Workout Complete";
+                document.getElementById("drillName").innerText =
+                    "Workout Complete";
 
-            document.getElementById("drillDescription").innerText =
-                "Great work.";
+                document.getElementById("drillDescription").innerText =
+                    "Great work.";
 
-            document.getElementById("drillTimer").innerText =
-                "00:00";
+                document.getElementById("drillTimer").innerText =
+                    "00:00";
 
-            document.getElementById("totalTimer").innerText =
-                "00:00";
+                document.getElementById("totalTimer").innerText =
+                    "00:00";
 
-            totalSeconds = 0;
+                totalSeconds = 0;
 
-            running = false;
+                running = false;
+
+                return;
+            }
+
+            startBuffer(nextDrill);
 
             return;
         }
 
-        startBuffer(nextDrill);
+        currentDrillSeconds--;
 
-        return;
-    }
+        if (currentDrillSeconds === 5) {
 
-    currentDrillSeconds--;
+            beep.pause();
+            beep.currentTime = 0;
 
-    if (
-        currentDrillSeconds <= 5 &&
-        currentDrillSeconds > 0
-    ) {
+            playSound(beep);
+        }
 
-        beep.pause();
-        beep.currentTime = 0;
+        totalSeconds--;
 
-        playSound(beep);
-    }
+        if (totalSeconds < 0) {
+            totalSeconds = 0;
+        }
 
-    totalSeconds--;
+        document.getElementById("drillTimer").innerText =
+            formatTime(currentDrillSeconds);
 
-    if (totalSeconds < 0) {
-        totalSeconds = 0;
-    }
+        document.getElementById("totalTimer").innerText =
+            formatTime(totalSeconds);
 
-    document.getElementById("drillTimer").innerText =
-        formatTime(currentDrillSeconds);
-
-    document.getElementById("totalTimer").innerText =
-        formatTime(totalSeconds);
-
-}, 1000);
+    }, 1000);
+}
     
 function startWorkout() {
 
