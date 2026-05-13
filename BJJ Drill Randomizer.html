@@ -177,8 +177,8 @@
 
 <script>
 const beep = new Audio("beep.mp3");
-const buzzer = new Audio("buzzer.mp3");
-const transition = new Audio("transition.mp3");
+const buzzer = new Audio("bell.mp3");
+//const transition = new Audio("transition.mp3");
 let plannedWorkout = [];
 let currentWorkoutIndex = 0;
 let inBuffer = false;
@@ -474,6 +474,8 @@ function startBuffer(nextCallback) {
 
     let buffer = BUFFER_SECONDS;
 
+    playSound(transition);
+
     document.getElementById("drillName").innerText =
         "Next Drill Starting...";
 
@@ -494,6 +496,17 @@ function startBuffer(nextCallback) {
         document.getElementById("drillTimer").innerText =
             formatTime(buffer);
 
+        /*
+        Last 3 second warning
+        */
+        if (
+            buffer <= 3 &&
+            buffer > 0
+        ) {
+
+            playSound(beep);
+        }
+
         if (buffer <= 0) {
 
             clearInterval(drillInterval);
@@ -508,11 +521,13 @@ function startBuffer(nextCallback) {
 
 function nextDrill() {
 
+    /*
+    Workout complete
+    */
     if (
         currentWorkoutIndex >= plannedWorkout.length
     ) {
 
-        clearInterval(totalInterval);
         clearInterval(drillInterval);
 
         document.getElementById("drillName").innerText =
@@ -523,7 +538,12 @@ function nextDrill() {
 
         document.getElementById("drillTimer").innerText =
             "00:00";
-        playSound(bell);
+
+        document.getElementById("totalTimer").innerText =
+            "00:00";
+
+        playSound(buzzer);
+
         running = false;
 
         return;
@@ -547,7 +567,52 @@ function nextDrill() {
 
         if (!running) return;
 
+        /*
+        Stop negatives
+        */
+        if (currentDrillSeconds <= 0) {
+
+            clearInterval(drillInterval);
+
+            playSound(buzzer);
+
+            /*
+            Last drill complete
+            */
+            if (
+                currentWorkoutIndex >=
+                plannedWorkout.length
+            ) {
+
+                document.getElementById("drillName").innerText =
+                    "Workout Complete";
+
+                document.getElementById("drillDescription").innerText =
+                    "Great work.";
+
+                document.getElementById("drillTimer").innerText =
+                    "00:00";
+
+                document.getElementById("totalTimer").innerText =
+                    "00:00";
+
+                totalSeconds = 0;
+
+                running = false;
+
+                return;
+            }
+
+            startBuffer(nextDrill);
+
+            return;
+        }
+
         currentDrillSeconds--;
+
+        /*
+        Countdown beeps
+        */
         if (
             currentDrillSeconds <= 3 &&
             currentDrillSeconds > 0
@@ -555,38 +620,28 @@ function nextDrill() {
 
             playSound(beep);
         }
-        
+
+        /*
+        Sync total timer exactly
+        */
+        totalSeconds--;
+
+        /*
+        Never allow negative
+        */
+        if (totalSeconds < 0) {
+            totalSeconds = 0;
+        }
+
         document.getElementById("drillTimer").innerText =
             formatTime(currentDrillSeconds);
 
-        if (!inBuffer) {
-
-            totalSeconds--;
-
-            document.getElementById("totalTimer").innerText =
-                formatTime(totalSeconds);
-        }
-
-        if (currentDrillSeconds <= 0) {
-            playSound(bell);
-            clearInterval(drillInterval);
-
-            if (
-                currentWorkoutIndex <
-                plannedWorkout.length
-            ) {
-
-                startBuffer(nextDrill);
-
-            } else {
-
-                nextDrill();
-            }
-        }
+        document.getElementById("totalTimer").innerText =
+            formatTime(totalSeconds);
 
     }, 1000);
 }
-
+    
 function startWorkout() {
 
     if (running) return;
