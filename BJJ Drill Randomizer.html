@@ -82,7 +82,7 @@
         margin: 0 10px;
     }
 </style>
-</head>
+
 <body>
 
 <div class="container">
@@ -279,7 +279,7 @@ let running = false;
 let currentDrill = null;
     
 beep.preload = "auto";
-buzzer.preload = "auto";
+bell.preload = "auto";
 //transition.preload = "auto";
 
 let soundEnabled = true;
@@ -571,7 +571,7 @@ function nextDrill() {
 
             clearInterval(drillInterval);
 
-            playSound(buzzer);
+            playSound(bell);
 
             if (
                 currentWorkoutIndex >=
@@ -604,7 +604,7 @@ function nextDrill() {
 
         currentDrillSeconds--;
 
-        if (currentDrillSeconds === 5) {
+        if (buffer === 5) {
 
             beep.pause();
             beep.currentTime = 0;
@@ -629,9 +629,14 @@ function nextDrill() {
     
 function startWorkout() {
 
-    if (running) return;
+    // Resume if paused
+    if (!running && totalSeconds > 0) {
+        running = true;
+        return;
+    }
 
-    running = true;
+    // Prevent duplicate starts
+    if (running) return;
 
     const requestedMinutes =
         parseInt(
@@ -687,11 +692,14 @@ function startWorkout() {
     }
 
 function pauseWorkout() {
-    running = false;
+    running = !running;
+
+    document.querySelector(".pause").innerText =
+        running ? "Pause" : "Resume";
 }
 
 function resetWorkout() {
-
+    document.getElementById("systemMessage").innerText = "";
     running = false;
 
     clearInterval(totalInterval);
