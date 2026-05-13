@@ -499,7 +499,7 @@ function startBuffer(nextCallback) {
         /*
         Last 5 second warning
         */
-       if (currentDrillSeconds === 5) {
+       if (buffer === 5) {
 
             beep.pause();
             beep.currentTime = 0;
@@ -604,7 +604,7 @@ function nextDrill() {
 
         currentDrillSeconds--;
 
-        if (buffer === 5) {
+        if (currentDrillSeconds === 5) {
 
             beep.pause();
             beep.currentTime = 0;
@@ -638,6 +638,8 @@ function startWorkout() {
     // Prevent duplicate starts
     if (running) return;
 
+    running = true;
+    
     const requestedMinutes =
         parseInt(
             document.getElementById("totalMinutes").value
